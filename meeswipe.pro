@@ -3,7 +3,7 @@
 ######################################################################
 
 TEMPLATE = lib
-TARGET = $$qtLibraryTarget(meeswipe)
+TARGET = $$qtLibraryTarget(mcompositor-gestures)
 INCLUDEPATH += /usr/include /usr/include/meegotouch/mcompositor
 
 QT += opengl
