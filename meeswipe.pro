@@ -3,7 +3,7 @@
 ######################################################################
 
 TEMPLATE = lib
-TARGET = 
+TARGET = $$qtLibraryTarget(meeswipe)
 DEPENDPATH += .
 INCLUDEPATH += .
 

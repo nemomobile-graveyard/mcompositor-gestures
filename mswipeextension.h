@@ -28,6 +28,7 @@ private:
 
 class SwipeManagerExtensionFactory : public MCompmgrExtensionFactory
 {
+    Q_INTERFACES(MCompmgrExtensionFactory)
  public:
     virtual ~SwipeManagerExtensionFactory() {}
 
