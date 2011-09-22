@@ -5,6 +5,8 @@
 
 #include <meegotouch/mcompositor/mcompositemanagerextension.h>
 
+#include <X11/extensions/XInput2.h>
+
 class MSwipeExtension : public MCompositeManagerExtension
 {
     Q_OBJECT

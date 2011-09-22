@@ -8,7 +8,6 @@
 #include <meegotouch/mcompositor/mcompositemanager.h>
 
 #include <X11/Xlib.h>
-#include <X11/extensions/XInput2.h>
 
 // XXX: need to free this probably
 
