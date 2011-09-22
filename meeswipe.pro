@@ -4,7 +4,7 @@
 
 TEMPLATE = lib
 TARGET = $$qtLibraryTarget(meeswipe)
-INCLUDEPATH += /usr/include
+INCLUDEPATH += /usr/include /usr/include/meegotouch/mcompositor
 
 QT += opengl
 
