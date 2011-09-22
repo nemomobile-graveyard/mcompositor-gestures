@@ -1,23 +1,18 @@
 #ifndef SWIPEMANAGEREXTENSIONFACTORY
 #define SWIPEMANAGEREXTENSIONFACTORY
 
+#include <meegotouch/mcompositor/mcompositemanagerextension.h>
 #include <meegotouch/mcompositor/mcompmgrextensionfactory.h>
 
-class SwipeManagerExtensionFactory : public MCompmgrExtensionFactory
+class SwipeManagerExtensionFactory : public QObject, MCompmgrExtensionFactory
 {
+    Q_OBJECT
     Q_INTERFACES(MCompmgrExtensionFactory)
  public:
     virtual ~SwipeManagerExtensionFactory() {}
 
-    virtual MCompositeManagerExtension* create();
-    {
-        return new MSwipeExtension();
-    }
-
-    virtual QString extensionName();
-    {
-        return QLatin1String("opensourceswipe");
-    }
+    MCompositeManagerExtension *create();
+    QString extensionName();
 };
 
 #endif // SWIPEMANAGEREXTENSIONFACTORY

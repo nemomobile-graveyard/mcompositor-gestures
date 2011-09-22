@@ -1,4 +1,5 @@
 #include "swipemanagerextensionfactory.h"
+#include "mswipeextension.h"
 
 MCompositeManagerExtension* SwipeManagerExtensionFactory::create()
 {
