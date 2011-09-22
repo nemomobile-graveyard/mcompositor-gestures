@@ -4,8 +4,7 @@
 
 TEMPLATE = lib
 TARGET = $$qtLibraryTarget(meeswipe)
-DEPENDPATH += .
-INCLUDEPATH += .
+INCLUDEPATH += /usr/include
 
 # Input
 SOURCES += mswipeextension.cpp
