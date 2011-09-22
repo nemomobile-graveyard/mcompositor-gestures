@@ -4,7 +4,6 @@
 #include <QObject>
 
 #include <meegotouch/mcompositor/mcompositemanagerextension.h>
-#include <meegotouch/mcompositor/mcompmgrextensionfactory.h>
 
 class MSwipeExtension : public MCompositeManagerExtension
 {
@@ -24,23 +23,6 @@ private:
     int startY;
     bool swiping;
     bool lockSwipe;
-};
-
-class SwipeManagerExtensionFactory : public MCompmgrExtensionFactory
-{
-    Q_INTERFACES(MCompmgrExtensionFactory)
- public:
-    virtual ~SwipeManagerExtensionFactory() {}
-
-    virtual MCompositeManagerExtension* create()
-    {
-        return new MSwipeExtension();
-    }
-
-    virtual QString extensionName()
-    {
-        return QLatin1String("opensourceswipe");
-    }
 };
 
 #endif // MSWIPEEXTENSION_H

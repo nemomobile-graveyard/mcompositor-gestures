@@ -135,4 +135,3 @@ bool MSwipeExtension::onMousePositionChanged(XMotionEvent *event)
     return false;
 }
 
-Q_EXPORT_PLUGIN2(meeswipe, MSwipeExtension)

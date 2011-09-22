@@ -7,9 +7,9 @@ TARGET = $$qtLibraryTarget(meeswipe)
 INCLUDEPATH += /usr/include
 
 # Input
-SOURCES += mswipeextension.cpp
+SOURCES += mswipeextension.cpp swipemanagerextensionfactory.cpp
 
-HEADERS += mswipeextension.h
+HEADERS += mswipeextension.h swipemanagerextensionfactory.h
 
 target.path = /usr/lib/mcompositor
 INSTALLS += target
