@@ -6,6 +6,8 @@ TEMPLATE = lib
 TARGET = $$qtLibraryTarget(meeswipe)
 INCLUDEPATH += /usr/include
 
+QT += opengl
+
 # Input
 SOURCES += mswipeextension.cpp swipemanagerextensionfactory.cpp
 

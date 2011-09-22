@@ -14,15 +14,19 @@ public:
     bool x11Event(XEvent *event);
     void afterX11Event(XEvent *event);
 
-    bool onPressed(XButtonPressedEvent *event);
-    bool onReleased(XButtonPressedEvent *event);
-    bool onMousePositionChanged(XMotionEvent *event);
+    bool onPressed(int x, int y);
+    bool onReleased(int x, int y);
+    bool onMousePositionChanged(int x, int y);
 
 private:
     int startX;
     int startY;
     bool swiping;
     bool lockSwipe;
+
+    // TODO: do we need to follow device changes?
+    XIDeviceInfo *xideviceinfo; // TODO: need to free this?
+    int opcode;
 };
 
 #endif // MSWIPEEXTENSION_H
