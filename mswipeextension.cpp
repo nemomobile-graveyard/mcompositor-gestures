@@ -50,6 +50,7 @@ MSwipeExtension::MSwipeExtension()
     if (!xideviceinfo)
         qFatal("MSwipeExtension: Internal error, no XI2 master pointer found.");
 
+    // thanks to Daniel Stone for his help with learning the tricks of XInput2
     XIEventMask xieventmask;
     xieventmask.mask_len = XIMaskLen(XI_LASTEVENT);
     xieventmask.deviceid = xideviceinfo->deviceid;
