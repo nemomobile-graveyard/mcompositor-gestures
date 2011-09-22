@@ -3,9 +3,9 @@
 #include <QX11Info>
 #include <QDesktopWidget>
 
-#include "mswipeextension.h"
-
 #include <meegotouch/mcompositor/mcompositemanager.h>
+
+#include "mswipeextension.h"
 
 #include <X11/Xlib.h>
 
