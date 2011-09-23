@@ -94,8 +94,6 @@ MSwipeExtension::MSwipeExtension()
  */
 bool MSwipeExtension::x11Event(XEvent *event)
 {
-    qDebug() << Q_FUNC_INFO << "Got event";
-
     if (event->type == GenericEvent) {
         bool keepGrab = false;
 
@@ -104,7 +102,7 @@ bool MSwipeExtension::x11Event(XEvent *event)
              event->xcookie.evtype == XI_Motion ||
              event->xcookie.evtype == XI_ButtonRelease)) {
             XIDeviceEvent *xievent = (XIDeviceEvent *)event->xcookie.data;
-            qDebug() << Q_FUNC_INFO << "Got XIEvent type " << xievent->type;
+//            qDebug() << Q_FUNC_INFO << "Got XIEvent type " << xievent->type;
 
             if (event->xcookie.evtype == XI_Motion) {
                 keepGrab = onMousePositionChanged(xievent->root_x, xievent->root_y);
@@ -116,10 +114,13 @@ bool MSwipeExtension::x11Event(XEvent *event)
         }
 
 
-        if (keepGrab)
+        if (keepGrab) {
+            qDebug() << Q_FUNC_INFO << "Keeping grab";
             XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, SyncPointer, CurrentTime);
-        else
+        } else {
+            qDebug() << Q_FUNC_INFO << "Releasing grab";
             XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, ReplayPointer, CurrentTime);
+        }
     }
     return false;
 }
@@ -131,8 +132,6 @@ void MSwipeExtension::afterX11Event(XEvent *event)
 
 bool MSwipeExtension::onPressed(int x, int y)
 {
-    qDebug() << Q_FUNC_INFO << "pressed at " << x << y;
-
     const int allowedSwipeWidth = 20;
     const int windowWidth = QApplication::desktop()->width(); // XXX: should we query window width, or desktop width here?
     const int windowHeight = QApplication::desktop()->height();
@@ -154,8 +153,6 @@ bool MSwipeExtension::onReleased(int x, int y)
 {
     bool retval = false;
 
-    qDebug() << Q_FUNC_INFO << "released at " << x << y;
-
     if (swiping == true) {
         const int diffX = abs(startX - x);
         const int diffY = abs(startY - x);
@@ -167,11 +164,11 @@ bool MSwipeExtension::onReleased(int x, int y)
         if (diffX > diffY) {
             // horizontal swipe
             if (windowWidth * cancelShortEdgeSwipe < diffX)
-                qDebug() << Q_FUNC_INFO << "Swipe ended; was a swipe on X";
+                qDebug() << Q_FUNC_INFO << "Swipe ended at " << x << y << "; was a swipe on X";
         } else {
             // vertical swipe
             if (windowHeight * cancelLongEdgeSwipe < diffY)
-                qDebug() << Q_FUNC_INFO << "Swipe ended; was a swipe on Y";
+                qDebug() << Q_FUNC_INFO << "Swipe ended at " << x << y << "; was a swipe on Y";
         }
 
         MCompositeManager *manager = qobject_cast<MCompositeManager *>(qApp);
@@ -191,13 +188,12 @@ bool MSwipeExtension::onReleased(int x, int y)
 bool MSwipeExtension::onMousePositionChanged(int x, int y)
 {
     const int swipeThreshold = 10;
-    qDebug() << Q_FUNC_INFO << "Moved at " << x << y;
 
     if((0 <= startX || 0 <= startY) && swiping == false) {
         if ((swipeThreshold < abs(x - startX)) ||
             (swipeThreshold < abs(y - startY))) {
             swiping = true;
-            qDebug() << Q_FUNC_INFO << "Swipe started";
+            qDebug() << Q_FUNC_INFO << "Swipe started at " << x << y;
         }
     }
 
