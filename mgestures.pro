@@ -9,9 +9,9 @@ INCLUDEPATH += /usr/include /usr/include/meegotouch/mcompositor
 QT += opengl
 
 # Input
-SOURCES += mswipeextension.cpp swipemanagerextensionfactory.cpp
+SOURCES += mswitchergesture.cpp gestureextensionfactory.cpp
 
-HEADERS += mswipeextension.h swipemanagerextensionfactory.h
+HEADERS += mswitchergesture.h gestureextensionfactory.h
 
 target.path = /usr/lib/mcompositor
 INSTALLS += target
