@@ -9,6 +9,9 @@
 
 #include <X11/Xlib.h>
 
+// define to enable debug logging
+#undef SWITCHER_DEBUG
+
 // XXX: need to free this probably
 
 MSwitcherGesture::MSwitcherGesture()
@@ -101,7 +104,9 @@ bool MSwitcherGesture::x11Event(XEvent *event)
              event->xcookie.evtype == XI_Motion ||
              event->xcookie.evtype == XI_ButtonRelease)) {
             XIDeviceEvent *xievent = (XIDeviceEvent *)event->xcookie.data;
+#if defined(SWITCHER_DEBUG)
 //            qDebug() << Q_FUNC_INFO << "Got XIEvent type " << xievent->type;
+#endif
 
             if (event->xcookie.evtype == XI_Motion) {
                 keepGrab = onMousePositionChanged(xievent->root_x, xievent->root_y);
@@ -114,10 +119,14 @@ bool MSwitcherGesture::x11Event(XEvent *event)
 
 
         if (keepGrab) {
+#if defined(SWITCHER_DEBUG)
             qDebug() << Q_FUNC_INFO << "Keeping grab";
+#endif
             XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, SyncPointer, CurrentTime);
         } else {
+#if defined(SWITCHER_DEBUG)
             qDebug() << Q_FUNC_INFO << "Releasing grab";
+#endif
             XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, ReplayPointer, CurrentTime);
         }
     }
@@ -136,11 +145,15 @@ bool MSwitcherGesture::onPressed(int x, int y)
     const int windowHeight = QApplication::desktop()->height();
 
     if (x <= allowedSwipeWidth || windowWidth - allowedSwipeWidth < x) {
+#if defined(SWITCHER_DEBUG)
         qDebug() << Q_FUNC_INFO << "Swipe started on an X edge";
+#endif
         startX = x;
         return true;
     } else if (y <= allowedSwipeWidth || windowHeight - allowedSwipeWidth < y) {
+#if defined(SWITCHER_DEBUG)
         qDebug() << Q_FUNC_INFO << "Swipe started on a Y edge";
+#endif
         startY = y;
         return true;
     }
@@ -160,6 +173,7 @@ bool MSwitcherGesture::onReleased(int x, int y)
         const float cancelShortEdgeSwipe = 0.5;
         const float cancelLongEdgeSwipe = 0.25;
 
+#if defined(SWITCHER_DEBUG)
         if (diffX > diffY) {
             // horizontal swipe
             if (windowWidth * cancelShortEdgeSwipe < diffX)
@@ -169,6 +183,7 @@ bool MSwitcherGesture::onReleased(int x, int y)
             if (windowHeight * cancelLongEdgeSwipe < diffY)
                 qDebug() << Q_FUNC_INFO << "Swipe ended at " << x << y << "; was a swipe on Y";
         }
+#endif
 
         MCompositeManager *manager = qobject_cast<MCompositeManager *>(qApp);
         if (!manager)
@@ -192,7 +207,9 @@ bool MSwitcherGesture::onMousePositionChanged(int x, int y)
         if ((swipeThreshold < abs(x - startX)) ||
             (swipeThreshold < abs(y - startY))) {
             swiping = true;
+#if defined(SWITCHER_DEBUG)
             qDebug() << Q_FUNC_INFO << "Swipe started at " << x << y;
+#endif
         }
     }
 
