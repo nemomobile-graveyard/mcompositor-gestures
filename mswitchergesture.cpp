@@ -5,17 +5,16 @@
 
 #include <meegotouch/mcompositor/mcompositemanager.h>
 
-#include "mswipeextension.h"
+#include "mswitchergesture.h"
 
 #include <X11/Xlib.h>
 
 // XXX: need to free this probably
 
-MSwipeExtension::MSwipeExtension()
+MSwitcherGesture::MSwitcherGesture()
     : startX(-1)
     , startY(-1)
     , swiping(false)
-    , lockSwipe(false)
 {
     listenXEventType(GenericEvent);
 
@@ -23,12 +22,12 @@ MSwipeExtension::MSwipeExtension()
     // check for extension
     int event, error;
     if (!XQueryExtension(QX11Info::display(), "XInputExtension", &opcode, &event, &error))
-        qFatal("MSwipeExtension: X Input extension not available.\n");
+        qFatal("MSwitcherGesture: X Input extension not available.\n");
 
     // and make sure we have a good version
     int major = 2, minor = 0;
     if (XIQueryVersion(QX11Info::display(), &major, &minor) == BadRequest)
-        qFatal("MSwipeExtension: XI2 not available. Server supports %d.%d\n", major, minor);
+        qFatal("MSwitcherGesture: XI2 not available. Server supports %d.%d\n", major, minor);
 
     // copied from Qt, with thanks
     // find the first master pointer and use this throughout Qt
@@ -48,7 +47,7 @@ MSwipeExtension::MSwipeExtension()
         XIFreeDeviceInfo(devices);
     }
     if (!xideviceinfo)
-        qFatal("MSwipeExtension: Internal error, no XI2 master pointer found.");
+        qFatal("MSwitcherGesture: Internal error, no XI2 master pointer found.");
 
     // thanks to Daniel Stone for his help with learning the tricks of XInput2
     XIEventMask xieventmask;
@@ -92,7 +91,7 @@ MSwipeExtension::MSwipeExtension()
  * extensions around and only use as a last resort to reimplement core
  * functionality.
  */
-bool MSwipeExtension::x11Event(XEvent *event)
+bool MSwitcherGesture::x11Event(XEvent *event)
 {
     if (event->type == GenericEvent) {
         bool keepGrab = false;
@@ -125,12 +124,12 @@ bool MSwipeExtension::x11Event(XEvent *event)
     return false;
 }
 
-void MSwipeExtension::afterX11Event(XEvent *event)
+void MSwitcherGesture::afterX11Event(XEvent *event)
 {
 
 }
 
-bool MSwipeExtension::onPressed(int x, int y)
+bool MSwitcherGesture::onPressed(int x, int y)
 {
     const int allowedSwipeWidth = 20;
     const int windowWidth = QApplication::desktop()->width(); // XXX: should we query window width, or desktop width here?
@@ -149,7 +148,7 @@ bool MSwipeExtension::onPressed(int x, int y)
     return false;
 }
 
-bool MSwipeExtension::onReleased(int x, int y)
+bool MSwitcherGesture::onReleased(int x, int y)
 {
     bool retval = false;
 
@@ -173,7 +172,7 @@ bool MSwipeExtension::onReleased(int x, int y)
 
         MCompositeManager *manager = qobject_cast<MCompositeManager *>(qApp);
         if (!manager)
-            qFatal("MSwipeExtension: not running in mcompositor!?");
+            qFatal("MSwitcherGesture: not running in mcompositor!?");
         manager->exposeSwitcher();
         retval = true;
     }
@@ -185,7 +184,7 @@ bool MSwipeExtension::onReleased(int x, int y)
     return retval;
 }
 
-bool MSwipeExtension::onMousePositionChanged(int x, int y)
+bool MSwitcherGesture::onMousePositionChanged(int x, int y)
 {
     const int swipeThreshold = 10;
 

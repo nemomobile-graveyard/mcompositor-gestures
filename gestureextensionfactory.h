@@ -1,18 +1,18 @@
-#ifndef SWIPEMANAGEREXTENSIONFACTORY
-#define SWIPEMANAGEREXTENSIONFACTORY
+#ifndef GESTUREEXETNSIONFACTORY_H
+#define GESTUREEXETNSIONFACTORY_H
 
 #include <meegotouch/mcompositor/mcompositemanagerextension.h>
 #include <meegotouch/mcompositor/mcompmgrextensionfactory.h>
 
-class SwipeManagerExtensionFactory : public QObject, MCompmgrExtensionFactory
+class GestureExtensionFactory : public QObject, MCompmgrExtensionFactory
 {
     Q_OBJECT
     Q_INTERFACES(MCompmgrExtensionFactory)
  public:
-    virtual ~SwipeManagerExtensionFactory() {}
+    virtual ~GestureExtensionFactory() {}
 
     MCompositeManagerExtension *create();
     QString extensionName();
 };
 
-#endif // SWIPEMANAGEREXTENSIONFACTORY
+#endif // GESTUREEXETNSIONFACTORY_H

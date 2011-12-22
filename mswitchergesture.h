@@ -1,5 +1,5 @@
-#ifndef MSWIPEEXTENSION_H
-#define MSWIPEEXTENSION_H
+#ifndef MSWITCHERGESTURE_H
+#define MSWITCHERGESTURE_H
 
 #include <QObject>
 
@@ -7,11 +7,11 @@
 
 #include <X11/extensions/XInput2.h>
 
-class MSwipeExtension : public MCompositeManagerExtension
+class MSwitcherGesture : public MCompositeManagerExtension
 {
     Q_OBJECT
 public:
-    MSwipeExtension();
+    MSwitcherGesture();
 
     bool x11Event(XEvent *event);
     void afterX11Event(XEvent *event);
@@ -24,11 +24,10 @@ private:
     int startX;
     int startY;
     bool swiping;
-    bool lockSwipe;
 
     // TODO: do we need to follow device changes?
     XIDeviceInfo *xideviceinfo; // TODO: need to free this?
     int opcode;
 };
 
-#endif // MSWIPEEXTENSION_H
+#endif // MSWITCHERGESTURE_H
