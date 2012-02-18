@@ -167,7 +167,7 @@ bool MSwitcherGesture::onReleased(int x, int y)
 
     if (swiping == true) {
         const int diffX = abs(startX - x);
-        const int diffY = abs(startY - x);
+        const int diffY = abs(startY - y);
         const int windowWidth = QApplication::desktop()->width(); // XXX: should we query window width, or desktop width here?
         const int windowHeight = QApplication::desktop()->height();
         const float cancelShortEdgeSwipe = 0.5;
@@ -201,16 +201,17 @@ bool MSwitcherGesture::onReleased(int x, int y)
 
 bool MSwitcherGesture::onMousePositionChanged(int x, int y)
 {
-    const int swipeThreshold = 10;
-
-    if((0 <= startX || 0 <= startY) && swiping == false) {
-        if ((swipeThreshold < abs(x - startX)) ||
-            (swipeThreshold < abs(y - startY))) {
-            swiping = true;
+    if (swiping == true)
+        return true;
+  
+    const int swipeThreshold = 20;
+    
+    if((0 <= startX && swipeThreshold < abs(x - startX)) || 
+       (0 <= startY && swipeThreshold < abs(y - startY)) ) {
+        swiping = true;
 #if defined(SWITCHER_DEBUG)
-            qDebug() << Q_FUNC_INFO << "Swipe started at " << x << y;
+        qDebug() << Q_FUNC_INFO << "Swipe started at " << x << y;
 #endif
-        }
     }
 
     return true;
