@@ -201,7 +201,7 @@ bool MSwitcherGesture::onReleased(int x, int y)
 
 bool MSwitcherGesture::onMousePositionChanged(int x, int y)
 {
-    const int swipeThreshold = 10;
+    const int swipeThreshold = 20;
 
     if((0 <= startX || 0 <= startY) && swiping == false) {
         if ((swipeThreshold < abs(x - startX)) ||
