@@ -201,16 +201,17 @@ bool MSwitcherGesture::onReleased(int x, int y)
 
 bool MSwitcherGesture::onMousePositionChanged(int x, int y)
 {
+    if (swiping == true)
+        return true;
+  
     const int swipeThreshold = 20;
-
-    if((0 <= startX || 0 <= startY) && swiping == false) {
-        if ((swipeThreshold < abs(x - startX)) ||
-            (swipeThreshold < abs(y - startY))) {
-            swiping = true;
+    
+    if((0 <= startX && swipeThreshold < abs(x - startX)) || 
+       (0 <= startY && swipeThreshold < abs(y - startY)) ) {
+        swiping = true;
 #if defined(SWITCHER_DEBUG)
-            qDebug() << Q_FUNC_INFO << "Swipe started at " << x << y;
+        qDebug() << Q_FUNC_INFO << "Swipe started at " << x << y;
 #endif
-        }
     }
 
     return true;
