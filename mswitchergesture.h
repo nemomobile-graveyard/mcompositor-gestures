@@ -43,6 +43,7 @@ class MSwitcherGesture : public MCompositeManagerExtension
     Q_OBJECT
 public:
     MSwitcherGesture();
+    ~MSwitcherGesture();
 
     bool x11Event(XEvent *event);
     void afterX11Event(XEvent *event);
@@ -57,7 +58,7 @@ private:
     bool swiping;
 
     // TODO: do we need to follow device changes?
-    XIDeviceInfo *xideviceinfo; // TODO: need to free this?
+    XIDeviceInfo *xideviceinfo;
     int opcode;
 };
 

@@ -49,9 +49,9 @@ MSwitcherGesture::MSwitcherGesture()
     : startX(-1)
     , startY(-1)
     , swiping(false)
+    , xideviceinfo(NULL)
 {
     listenXEventType(GenericEvent);
-
 
     // check for extension
     int event, error;
@@ -109,6 +109,14 @@ MSwitcherGesture::MSwitcherGesture()
             );  
 
     free(xieventmask.mask);
+}
+
+MSwitcherGesture::~MSwitcherGesture()
+{
+    if (xideviceinfo) {
+        XIFreeDeviceInfo(xideviceinfo);
+        xideviceinfo = NULL;
+    }
 }
 
 
