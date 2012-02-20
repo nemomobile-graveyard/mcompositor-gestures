@@ -1,3 +1,34 @@
+/*
+* Copyright (C) 2011 Robin Burchell <robin+nemo@viroteck.net>
+*
+* You may use this file under the terms of the BSD license as follows:
+*
+* "Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are
+* met:
+* * Redistributions of source code must retain the above copyright
+* notice, this list of conditions and the following disclaimer.
+* * Redistributions in binary form must reproduce the above copyright
+* notice, this list of conditions and the following disclaimer in
+* the documentation and/or other materials provided with the
+* distribution.
+* * Neither the name of Nemo Mobile nor the names of its contributors
+* may be used to endorse or promote products derived from this
+* software without specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+* A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+* OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+* THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+*/
+
 #include <QDebug>
 #include <QApplication>
 #include <QX11Info>
@@ -18,9 +49,9 @@ MSwitcherGesture::MSwitcherGesture()
     : startX(-1)
     , startY(-1)
     , swiping(false)
+    , xideviceinfo(NULL)
 {
     listenXEventType(GenericEvent);
-
 
     // check for extension
     int event, error;
@@ -78,6 +109,14 @@ MSwitcherGesture::MSwitcherGesture()
             );  
 
     free(xieventmask.mask);
+}
+
+MSwitcherGesture::~MSwitcherGesture()
+{
+    if (xideviceinfo) {
+        XIFreeDeviceInfo(xideviceinfo);
+        xideviceinfo = NULL;
+    }
 }
 
 
@@ -140,6 +179,7 @@ void MSwitcherGesture::afterX11Event(XEvent *event)
 
 bool MSwitcherGesture::onPressed(int x, int y)
 {
+    // TODO: User should be able to configure this as well.
     const int allowedSwipeWidth = 20;
     const int windowWidth = QApplication::desktop()->width(); // XXX: should we query window width, or desktop width here?
     const int windowHeight = QApplication::desktop()->height();
@@ -166,6 +206,7 @@ bool MSwitcherGesture::onReleased(int x, int y)
     bool retval = false;
 
     if (swiping == true) {
+#if defined(SWITCHER_DEBUG)
         const int diffX = abs(startX - x);
         const int diffY = abs(startY - y);
         const int windowWidth = QApplication::desktop()->width(); // XXX: should we query window width, or desktop width here?
@@ -173,7 +214,6 @@ bool MSwitcherGesture::onReleased(int x, int y)
         const float cancelShortEdgeSwipe = 0.5;
         const float cancelLongEdgeSwipe = 0.25;
 
-#if defined(SWITCHER_DEBUG)
         if (diffX > diffY) {
             // horizontal swipe
             if (windowWidth * cancelShortEdgeSwipe < diffX)
@@ -203,7 +243,8 @@ bool MSwitcherGesture::onMousePositionChanged(int x, int y)
 {
     if (swiping == true)
         return true;
-  
+
+    // TODO: User should be able to configure this
     const int swipeThreshold = 20;
     
     if((0 <= startX && swipeThreshold < abs(x - startX)) || 
