@@ -29,10 +29,13 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 */
 
+#include <meegotouch/mcompositor/mcompositewindow.h>
+
 #include <QDebug>
 #include <QApplication>
 #include <QX11Info>
 #include <QDesktopWidget>
+#include <QPoint>
 
 #include <meegotouch/mcompositor/mcompositemanager.h>
 
@@ -43,13 +46,12 @@
 // define to enable debug logging
 #undef SWITCHER_DEBUG
 
-// XXX: need to free this probably
-
 MSwitcherGesture::MSwitcherGesture()
     : startX(-1)
     , startY(-1)
     , swiping(false)
     , xideviceinfo(NULL)
+    , currentAppWindow(0)
 {
     listenXEventType(GenericEvent);
 
@@ -109,6 +111,8 @@ MSwitcherGesture::MSwitcherGesture()
             );  
 
     free(xieventmask.mask);
+    
+    QObject::connect(this, SIGNAL(currentAppChanged(Qt::HANDLE)), this, SLOT(appWindowChanged(Qt::HANDLE)));
 }
 
 MSwitcherGesture::~MSwitcherGesture()
@@ -135,46 +139,57 @@ MSwitcherGesture::~MSwitcherGesture()
  */
 bool MSwitcherGesture::x11Event(XEvent *event)
 {
-    if (event->type == GenericEvent) {
-        bool keepGrab = false;
+    if (event->type != GenericEvent) {
+        return false;
+    }
 
-        if (event->xcookie.extension == opcode &&
-            (event->xcookie.evtype == XI_ButtonPress ||
-             event->xcookie.evtype == XI_Motion ||
-             event->xcookie.evtype == XI_ButtonRelease)) {
-            XIDeviceEvent *xievent = (XIDeviceEvent *)event->xcookie.data;
+    QRegion customRegion;
+    // TODO: Should there be mutex around currentAppWindow?
+    bool checkCustomRegion = getCustomRegion(currentAppWindow, customRegion);
 #if defined(SWITCHER_DEBUG)
-//            qDebug() << Q_FUNC_INFO << "Got XIEvent type " << xievent->type;
+    qDebug() << "Need to check custom region: " << checkCustomRegion << "," << customRegion;
 #endif
+    bool keepGrab = false;
 
-            if (event->xcookie.evtype == XI_Motion) {
-                keepGrab = onMousePositionChanged(xievent->root_x, xievent->root_y);
-            } else if (event->xcookie.evtype == XI_ButtonPress) {
-                keepGrab = onPressed(xievent->root_x, xievent->root_y);
-            } else if (event->xcookie.evtype == XI_ButtonRelease) {
-                keepGrab = onReleased(xievent->root_x, xievent->root_y);
-            }
+    if (event->xcookie.extension == opcode &&
+        (event->xcookie.evtype == XI_ButtonPress ||
+            event->xcookie.evtype == XI_Motion ||
+            event->xcookie.evtype == XI_ButtonRelease)) {
+        XIDeviceEvent *xievent = (XIDeviceEvent *)event->xcookie.data;
+        
+        if (customRegion.contains(QPoint(xievent->root_x, xievent->root_y))) {
+            // If the point is inside custom region we ignore it.
+            keepGrab = false;
+            // And reset if there was swipe enabled alraedy.
+            swiping = false;
+            startX = -1;
+            startY = -1;
+        } else if (event->xcookie.evtype == XI_Motion) {
+            keepGrab = onMousePositionChanged(xievent->root_x, xievent->root_y);
+        } else if (event->xcookie.evtype == XI_ButtonPress) {
+            keepGrab = onPressed(xievent->root_x, xievent->root_y);
+        } else if (event->xcookie.evtype == XI_ButtonRelease) {
+            keepGrab = onReleased(xievent->root_x, xievent->root_y);
         }
+    }
 
-
-        if (keepGrab) {
+    if (keepGrab) {
 #if defined(SWITCHER_DEBUG)
-            qDebug() << Q_FUNC_INFO << "Keeping grab";
+        qDebug() << Q_FUNC_INFO << "Keeping grab";
 #endif
-            XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, SyncPointer, CurrentTime);
-        } else {
+        XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, SyncPointer, CurrentTime);
+    } else {
 #if defined(SWITCHER_DEBUG)
-            qDebug() << Q_FUNC_INFO << "Releasing grab";
+        qDebug() << Q_FUNC_INFO << "Releasing grab";
 #endif
-            XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, ReplayPointer, CurrentTime);
-        }
+        XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, ReplayPointer, CurrentTime);
     }
     return false;
 }
 
 void MSwitcherGesture::afterX11Event(XEvent *event)
 {
-
+    Q_UNUSED(event)
 }
 
 bool MSwitcherGesture::onPressed(int x, int y)
@@ -256,5 +271,68 @@ bool MSwitcherGesture::onMousePositionChanged(int x, int y)
     }
 
     return true;
+}
+
+void MSwitcherGesture::appWindowChanged(Qt::HANDLE window)
+{
+#if defined(SWITCHER_DEBUG)    
+    qDebug() << "Current window is " << window;
+#endif    
+    // TODO: Does this need mutex?
+    currentAppWindow = window;
+}
+
+bool MSwitcherGesture::getCustomRegion(Qt::HANDLE window, QRegion& customRegion)
+{
+    MCompositeWindow* window_object = MCompositeWindow::compositeWindow(window);
+    if ( !window_object ) {
+#if defined(SWITCHER_DEBUG)
+        qDebug() << Q_FUNC_INFO << "Unable to get composite window for window id: " << window;
+#endif
+        return false;
+    }
+
+#if defined(SWITCHER_DEBUG)
+    qDebug() << Q_FUNC_INFO << "Window: " << window 
+             << ", stacking index: " << window_object->indexInStack() 
+             << ", is mapped: " << window_object ->isMapped();
+#endif
+        
+    MWindowPropertyCache* pc = window_object->propertyCache();
+
+    if (!pc) {
+#if defined(SWITCHER_DEBUG)
+        qDebug() << Q_FUNC_INFO << "No property cache found.";
+#endif
+        return false;
+    }
+    
+    // If window is mapped then return the custom region.
+    if (window_object->isMapped())
+    {
+        if (pc->isLockScreen())
+        {
+            // In case the window is lockscreen we block gestures for the 
+            // whole screen.
+            customRegion = QRegion(QApplication::desktop()->screenGeometry());
+        }
+        else
+        {
+            customRegion = pc->customRegion();
+        }
+        return true;
+    }    
+    
+    // .. else check the transient windows recursively.
+    QList<Window> transientWindows = pc->transientWindows();
+    Window transientWindow;
+    foreach ( transientWindow, transientWindows)
+    {
+        if ( getCustomRegion(transientWindow, customRegion))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
