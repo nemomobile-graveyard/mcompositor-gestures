@@ -29,6 +29,8 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 */
 
+#include <QDataStream>
+
 #include "gestureextensionfactory.h"
 #include "mswitchergesture.h"
 

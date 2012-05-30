@@ -32,6 +32,7 @@
 #ifndef MSWITCHERGESTURE_H
 #define MSWITCHERGESTURE_H
 
+#include <QRegion>
 #include <QObject>
 
 #include <meegotouch/mcompositor/mcompositemanagerextension.h>
@@ -52,7 +53,15 @@ public:
     bool onReleased(int x, int y);
     bool onMousePositionChanged(int x, int y);
 
+private slots:
+    void appWindowChanged(Qt::HANDLE window);
+    
 private:
+    // This function is used to get the custom region that is used to block gestures.
+    // More information can be found from the Harmattan documentation:
+    // http://harmattan-dev.nokia.com/docs/library/html/guide/html/Developer_Library_Developing_for_Harmattan_Enabling_swipe_lock_Example_of_a_manual_swipe_lock.html
+    bool getCustomRegion(Qt::HANDLE window, QRegion& customRegion);
+    
     int startX;
     int startY;
     bool swiping;
@@ -60,6 +69,8 @@ private:
     // TODO: do we need to follow device changes?
     XIDeviceInfo *xideviceinfo;
     int opcode;
+    
+    Qt::HANDLE currentAppWindow;
 };
 
 #endif // MSWITCHERGESTURE_H
