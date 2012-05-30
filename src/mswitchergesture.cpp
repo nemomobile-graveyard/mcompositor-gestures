@@ -310,7 +310,16 @@ bool MSwitcherGesture::getCustomRegion(Qt::HANDLE window, QRegion& customRegion)
     // If window is mapped then return the custom region.
     if (window_object->isMapped())
     {
-        customRegion = pc->customRegion();
+        if (pc->isLockScreen())
+        {
+            // In case the window is lockscreen we block gestures for the 
+            // whole screen.
+            customRegion = QRegion(QApplication::desktop()->screenGeometry());
+        }
+        else
+        {
+            customRegion = pc->customRegion();
+        }
         return true;
     }    
     
