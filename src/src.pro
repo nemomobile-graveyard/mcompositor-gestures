@@ -15,3 +15,5 @@ HEADERS += mswitchergesture.h gestureextensionfactory.h
 
 target.path = /usr/lib/mcompositor
 INSTALLS += target
+
+SUBDIRS = tests
