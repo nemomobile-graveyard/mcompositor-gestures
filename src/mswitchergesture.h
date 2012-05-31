@@ -1,5 +1,6 @@
 /*
 * Copyright (C) 2011 Robin Burchell <robin+nemo@viroteck.net>
+*               2012 Marko Saukko <marko.saukko@gmail.com>
 *
 * You may use this file under the terms of the BSD license as follows:
 *
@@ -29,18 +30,48 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 */
 
-#include "gestureextensionfactory.h"
-#include "mswitchergesture.h"
+#ifndef MSWITCHERGESTURE_H
+#define MSWITCHERGESTURE_H
 
-MCompositeManagerExtension* GestureExtensionFactory::create()
+#include <QRegion>
+#include <QObject>
+
+#include <meegotouch/mcompositor/mcompositemanagerextension.h>
+
+#include <X11/extensions/XInput2.h>
+
+class MSwitcherGesture : public MCompositeManagerExtension
 {
-    return new MSwitcherGesture();
-}
+    Q_OBJECT
+public:
+    MSwitcherGesture();
+    ~MSwitcherGesture();
 
-QString GestureExtensionFactory::extensionName()
-{
-    return QLatin1String("nemogestures");
-}
+    bool x11Event(XEvent *event);
+    void afterX11Event(XEvent *event);
 
-Q_EXPORT_PLUGIN2(nemogestures, GestureExtensionFactory)
+    bool onPressed(int x, int y);
+    bool onReleased(int x, int y);
+    bool onMousePositionChanged(int x, int y);
 
+private slots:
+    void appWindowChanged(Qt::HANDLE window);
+    
+private:
+    // This function is used to get the custom region that is used to block gestures.
+    // More information can be found from the Harmattan documentation:
+    // http://harmattan-dev.nokia.com/docs/library/html/guide/html/Developer_Library_Developing_for_Harmattan_Enabling_swipe_lock_Example_of_a_manual_swipe_lock.html
+    bool getCustomRegion(Qt::HANDLE window, QRegion& customRegion);
+    
+    int startX;
+    int startY;
+    bool swiping;
+
+    // TODO: do we need to follow device changes?
+    XIDeviceInfo *xideviceinfo;
+    int opcode;
+    
+    Qt::HANDLE currentAppWindow;
+};
+
+#endif // MSWITCHERGESTURE_H

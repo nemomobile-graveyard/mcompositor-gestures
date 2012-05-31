@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Gesture lock test applciation
+Icon=icons-Applications-filemanager
+Exec=/usr/bin/gesture-lock-testapp
+Comment=Test application for gesture lock
