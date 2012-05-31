@@ -29,37 +29,20 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 */
 
-#ifndef MSWITCHERGESTURE_H
-#define MSWITCHERGESTURE_H
+#include <QDataStream>
 
-#include <QObject>
+#include "gestureextensionfactory.h"
+#include "mswitchergesture.h"
 
-#include <meegotouch/mcompositor/mcompositemanagerextension.h>
-
-#include <X11/extensions/XInput2.h>
-
-class MSwitcherGesture : public MCompositeManagerExtension
+MCompositeManagerExtension* GestureExtensionFactory::create()
 {
-    Q_OBJECT
-public:
-    MSwitcherGesture();
-    ~MSwitcherGesture();
+    return new MSwitcherGesture();
+}
 
-    bool x11Event(XEvent *event);
-    void afterX11Event(XEvent *event);
+QString GestureExtensionFactory::extensionName()
+{
+    return QLatin1String("nemogestures");
+}
 
-    bool onPressed(int x, int y);
-    bool onReleased(int x, int y);
-    bool onMousePositionChanged(int x, int y);
+Q_EXPORT_PLUGIN2(nemogestures, GestureExtensionFactory)
 
-private:
-    int startX;
-    int startY;
-    bool swiping;
-
-    // TODO: do we need to follow device changes?
-    XIDeviceInfo *xideviceinfo;
-    int opcode;
-};
-
-#endif // MSWITCHERGESTURE_H
