@@ -1,5 +1,6 @@
 /*
 * Copyright (C) 2011 Robin Burchell <robin+nemo@viroteck.net>
+*               2012 Marko Saukko <marko.saukko@gmail.com>
 *
 * You may use this file under the terms of the BSD license as follows:
 *

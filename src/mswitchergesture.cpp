@@ -1,5 +1,6 @@
 /*
 * Copyright (C) 2011 Robin Burchell <robin+nemo@viroteck.net>
+*               2012 Marko Saukko <marko.saukko@gmail.com>
 *
 * You may use this file under the terms of the BSD license as follows:
 *
@@ -310,10 +311,14 @@ bool MSwitcherGesture::getCustomRegion(Qt::HANDLE window, QRegion& customRegion)
     // If window is mapped then return the custom region.
     if (window_object->isMapped())
     {
-        if (pc->isLockScreen())
+        if ( pc->isLockScreen() ||
+             pc->windowType() == MCompAtoms::DESKTOP )
         {
-            // In case the window is lockscreen we block gestures for the 
-            // whole screen.
+#if defined(SWITCHER_DEBUG)
+            qDebug() << Q_FUNC_INFO << "Blocking whole screen. isLockScreen(): " << pc->isLockScreen() << ", windowType(): " << pc->windowType();
+#endif            
+            // In case the window is lockscreen or desktop
+            // we block gestures for the whole screen.
             customRegion = QRegion(QApplication::desktop()->screenGeometry());
         }
         else
