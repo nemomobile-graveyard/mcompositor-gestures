@@ -200,7 +200,7 @@ void MSwitcherGesture::afterX11Event(XEvent *event)
 bool MSwitcherGesture::onPressed(int x, int y)
 {
     // TODO: User should be able to configure this as well.
-    const int allowedSwipeWidth = 20;
+    const int allowedSwipeWidth = 10;
     const int windowWidth = QApplication::desktop()->width(); // XXX: should we query window width, or desktop width here?
     const int windowHeight = QApplication::desktop()->height();
 
