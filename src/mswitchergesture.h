@@ -62,7 +62,13 @@ private:
     // More information can be found from the Harmattan documentation:
     // http://harmattan-dev.nokia.com/docs/library/html/guide/html/Developer_Library_Developing_for_Harmattan_Enabling_swipe_lock_Example_of_a_manual_swipe_lock.html
     bool getCustomRegion(Qt::HANDLE window, QRegion& customRegion);
-    
+
+    enum SwipeDirection {
+        SwipeOnWidth,
+        SwipeOnHeight
+    };
+
+    SwipeDirection swipeDirection;
     int startX;
     int startY;
     bool swiping;

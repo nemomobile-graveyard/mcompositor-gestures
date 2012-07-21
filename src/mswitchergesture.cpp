@@ -206,10 +206,12 @@ bool MSwitcherGesture::onPressed(int x, int y)
 
     if (x <= allowedSwipeWidth || windowWidth - allowedSwipeWidth < x) {
         SDEBUG() << Q_FUNC_INFO << "Swipe started on an X edge";
+        swipeDirection = SwipeOnWidth;
         startX = x;
         return true;
     } else if (y <= allowedSwipeWidth || windowHeight - allowedSwipeWidth < y) {
         SDEBUG() << Q_FUNC_INFO << "Swipe started on a Y edge";
+        swipeDirection = SwipeOnHeight;
         startY = y;
         return true;
     }
@@ -230,7 +232,7 @@ bool MSwitcherGesture::onReleased(int x, int y)
         const float cancelLongEdgeSwipe = 0.20;
         bool doSwitch = true;
 
-        if (diffX > diffY) {
+        if (swipeDirection == SwipeOnWidth) {
             // horizontal swipe
             if ((windowWidth * cancelShortEdgeSwipe) < diffX)
                 SDEBUG() << Q_FUNC_INFO << "Swipe started " << startX << startY << " ended at " << x << y << "; was a swipe on X";
