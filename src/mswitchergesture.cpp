@@ -45,7 +45,13 @@
 #include <X11/Xlib.h>
 
 // define to enable debug logging
-#undef SWITCHER_DEBUG
+#define SWITCHER_DEBUG
+
+#ifdef SWITCHER_DEBUG
+#define SDEBUG qDebug
+#else
+#define SDEBUG if(false)qDebug
+#endif
 
 MSwitcherGesture::MSwitcherGesture()
     : startX(-1)
@@ -147,8 +153,9 @@ bool MSwitcherGesture::x11Event(XEvent *event)
     QRegion customRegion;
     // TODO: Should there be mutex around currentAppWindow?
     bool checkCustomRegion = getCustomRegion(currentAppWindow, customRegion);
-#if defined(SWITCHER_DEBUG)
-    qDebug() << "Need to check custom region: " << checkCustomRegion << "," << customRegion;
+    // warning: this will get spammy
+#ifdef REGION_DEBUG
+    SDEBUG() << "Need to check custom region: " << checkCustomRegion << "," << customRegion;
 #endif
     bool keepGrab = false;
 
@@ -169,22 +176,19 @@ bool MSwitcherGesture::x11Event(XEvent *event)
             keepGrab = onMousePositionChanged(xievent->root_x, xievent->root_y);
         } else if (event->xcookie.evtype == XI_ButtonPress) {
             keepGrab = onPressed(xievent->root_x, xievent->root_y);
+            if (keepGrab)
+                SDEBUG() << Q_FUNC_INFO << "Keeping grab";
+            else
+                SDEBUG() << Q_FUNC_INFO << "Releasing grab";
         } else if (event->xcookie.evtype == XI_ButtonRelease) {
             keepGrab = onReleased(xievent->root_x, xievent->root_y);
         }
     }
 
-    if (keepGrab) {
-#if defined(SWITCHER_DEBUG)
-        qDebug() << Q_FUNC_INFO << "Keeping grab";
-#endif
+    if (keepGrab)
         XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, SyncPointer, CurrentTime);
-    } else {
-#if defined(SWITCHER_DEBUG)
-        qDebug() << Q_FUNC_INFO << "Releasing grab";
-#endif
+    else
         XIAllowEvents(QX11Info::display(), xideviceinfo->deviceid, ReplayPointer, CurrentTime);
-    }
     return false;
 }
 
@@ -201,15 +205,11 @@ bool MSwitcherGesture::onPressed(int x, int y)
     const int windowHeight = QApplication::desktop()->height();
 
     if (x <= allowedSwipeWidth || windowWidth - allowedSwipeWidth < x) {
-#if defined(SWITCHER_DEBUG)
-        qDebug() << Q_FUNC_INFO << "Swipe started on an X edge";
-#endif
+        SDEBUG() << Q_FUNC_INFO << "Swipe started on an X edge";
         startX = x;
         return true;
     } else if (y <= allowedSwipeWidth || windowHeight - allowedSwipeWidth < y) {
-#if defined(SWITCHER_DEBUG)
-        qDebug() << Q_FUNC_INFO << "Swipe started on a Y edge";
-#endif
+        SDEBUG() << Q_FUNC_INFO << "Swipe started on a Y edge";
         startY = y;
         return true;
     }
@@ -222,30 +222,38 @@ bool MSwitcherGesture::onReleased(int x, int y)
     bool retval = false;
 
     if (swiping == true) {
-#if defined(SWITCHER_DEBUG)
         const int diffX = abs(startX - x);
         const int diffY = abs(startY - y);
         const int windowWidth = QApplication::desktop()->width(); // XXX: should we query window width, or desktop width here?
         const int windowHeight = QApplication::desktop()->height();
-        const float cancelShortEdgeSwipe = 0.5;
-        const float cancelLongEdgeSwipe = 0.25;
+        const float cancelShortEdgeSwipe = 0.3;
+        const float cancelLongEdgeSwipe = 0.20;
+        bool doSwitch = true;
 
         if (diffX > diffY) {
             // horizontal swipe
-            if (windowWidth * cancelShortEdgeSwipe < diffX)
-                qDebug() << Q_FUNC_INFO << "Swipe ended at " << x << y << "; was a swipe on X";
+            if ((windowWidth * cancelShortEdgeSwipe) < diffX)
+                SDEBUG() << Q_FUNC_INFO << "Swipe started " << startX << startY << " ended at " << x << y << "; was a swipe on X";
+            else
+                doSwitch = false;
         } else {
             // vertical swipe
-            if (windowHeight * cancelLongEdgeSwipe < diffY)
-                qDebug() << Q_FUNC_INFO << "Swipe ended at " << x << y << "; was a swipe on Y";
+            if ((windowHeight * cancelLongEdgeSwipe) < diffY)
+                SDEBUG() << Q_FUNC_INFO << "Swipe started " << startX << startY << " ended at " << x << y << "; was a swipe on Y";
+            else
+                doSwitch = false;
         }
-#endif
 
-        MCompositeManager *manager = qobject_cast<MCompositeManager *>(qApp);
-        if (!manager)
-            qFatal("MSwitcherGesture: not running in mcompositor!?");
-        manager->exposeSwitcher();
-        retval = true;
+        if (doSwitch) {
+            MCompositeManager *manager = qobject_cast<MCompositeManager *>(qApp);
+            if (!manager)
+                qFatal("MSwitcherGesture: not running in mcompositor!?");
+            manager->exposeSwitcher();
+            retval = true;
+        } else {
+            SDEBUG() << Q_FUNC_INFO << "Swipe unrecognised, start: " << startX << startY << " ended at " << x << y << "; diffX " << diffX << " diffY " << diffY;
+            SDEBUG() << Q_FUNC_INFO << "Width: " << windowWidth << " height " << windowHeight;
+        }
     }
 
     swiping = false;
@@ -266,9 +274,7 @@ bool MSwitcherGesture::onMousePositionChanged(int x, int y)
     if((0 <= startX && swipeThreshold < abs(x - startX)) || 
        (0 <= startY && swipeThreshold < abs(y - startY)) ) {
         swiping = true;
-#if defined(SWITCHER_DEBUG)
-        qDebug() << Q_FUNC_INFO << "Swipe started at " << x << y;
-#endif
+        SDEBUG() << Q_FUNC_INFO << "Swipe started at " << x << y;
     }
 
     return true;
@@ -276,9 +282,7 @@ bool MSwitcherGesture::onMousePositionChanged(int x, int y)
 
 void MSwitcherGesture::appWindowChanged(Qt::HANDLE window)
 {
-#if defined(SWITCHER_DEBUG)    
-    qDebug() << "Current window is " << window;
-#endif    
+    SDEBUG() << "Current window is " << window;
     // TODO: Does this need mutex?
     currentAppWindow = window;
 }
@@ -286,25 +290,22 @@ void MSwitcherGesture::appWindowChanged(Qt::HANDLE window)
 bool MSwitcherGesture::getCustomRegion(Qt::HANDLE window, QRegion& customRegion)
 {
     MCompositeWindow* window_object = MCompositeWindow::compositeWindow(window);
-    if ( !window_object ) {
-#if defined(SWITCHER_DEBUG)
-        qDebug() << Q_FUNC_INFO << "Unable to get composite window for window id: " << window;
-#endif
+    if (!window_object) {
+        SDEBUG() << Q_FUNC_INFO << "Unable to get composite window for window id: " << window;
         return false;
     }
 
-#if defined(SWITCHER_DEBUG)
-    qDebug() << Q_FUNC_INFO << "Window: " << window 
+    // warning: this will get spammy
+#ifdef REGION_DEBUG
+    SDEBUG() << Q_FUNC_INFO << "Window: " << window 
              << ", stacking index: " << window_object->indexInStack() 
              << ", is mapped: " << window_object ->isMapped();
 #endif
-        
+
     MWindowPropertyCache* pc = window_object->propertyCache();
 
     if (!pc) {
-#if defined(SWITCHER_DEBUG)
-        qDebug() << Q_FUNC_INFO << "No property cache found.";
-#endif
+        SDEBUG() << Q_FUNC_INFO << "No property cache found.";
         return false;
     }
     
@@ -314,9 +315,7 @@ bool MSwitcherGesture::getCustomRegion(Qt::HANDLE window, QRegion& customRegion)
         if ( pc->isLockScreen() ||
              pc->windowType() == MCompAtoms::DESKTOP )
         {
-#if defined(SWITCHER_DEBUG)
-            qDebug() << Q_FUNC_INFO << "Blocking whole screen. isLockScreen(): " << pc->isLockScreen() << ", windowType(): " << pc->windowType();
-#endif            
+            SDEBUG() << Q_FUNC_INFO << "Blocking whole screen. isLockScreen(): " << pc->isLockScreen() << ", windowType(): " << pc->windowType();
             // In case the window is lockscreen or desktop
             // we block gestures for the whole screen.
             customRegion = QRegion(QApplication::desktop()->screenGeometry());
