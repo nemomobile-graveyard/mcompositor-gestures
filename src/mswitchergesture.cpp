@@ -45,7 +45,7 @@
 #include <X11/Xlib.h>
 
 // define to enable debug logging
-#define SWITCHER_DEBUG
+#undef SWITCHER_DEBUG
 
 #ifdef SWITCHER_DEBUG
 #define SDEBUG qDebug
