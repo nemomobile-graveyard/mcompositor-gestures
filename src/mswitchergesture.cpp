@@ -236,13 +236,13 @@ bool MSwitcherGesture::onReleased(int x, int y)
 
         if (swipeDirection == SwipeOnWidth) {
             // horizontal swipe
-            if ((windowWidth * cancelShortEdgeSwipe) < diffX)
+            if ((windowWidth * cancelShortEdgeSwipe) > diffX)
                 SDEBUG() << Q_FUNC_INFO << "Swipe started " << startX << startY << " ended at " << x << y << "; was a swipe on X";
             else
                 doSwitch = false;
         } else {
             // vertical swipe
-            if ((windowHeight * cancelLongEdgeSwipe) < diffY)
+            if ((windowHeight * cancelLongEdgeSwipe) > diffY)
                 SDEBUG() << Q_FUNC_INFO << "Swipe started " << startX << startY << " ended at " << x << y << "; was a swipe on Y";
             else
                 doSwitch = false;
