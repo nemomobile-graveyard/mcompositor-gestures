@@ -1,34 +1,35 @@
 /*
-* Copyright (C) 2011 Robin Burchell <robin+nemo@viroteck.net>
-*               2012 Marko Saukko <marko.saukko@gmail.com>
-*
-* You may use this file under the terms of the BSD license as follows:
-*
-* "Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are
-* met:
-* * Redistributions of source code must retain the above copyright
-* notice, this list of conditions and the following disclaimer.
-* * Redistributions in binary form must reproduce the above copyright
-* notice, this list of conditions and the following disclaimer in
-* the documentation and/or other materials provided with the
-* distribution.
-* * Neither the name of Nemo Mobile nor the names of its contributors
-* may be used to endorse or promote products derived from this
-* software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-* A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-* OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-* THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-*/
+ * Copyright (C) 2012 Jolla Mobile <robin.burchell@jollamobile.com>
+ * Copyright (C) 2012 Marko Saukko <marko.saukko@gmail.com>
+ * Copyright (C) 2011 Robin Burchell <robin+nemo@viroteck.net>
+ *
+ * You may use this file under the terms of the BSD license as follows:
+ *
+ * "Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ * * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in
+ * the documentation and/or other materials provided with the
+ * distribution.
+ * * Neither the name of Nemo Mobile nor the names of its contributors
+ * may be used to endorse or promote products derived from this
+ * software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
+ */
 
 #include <meegotouch/mcompositor/mcompositewindow.h>
 
@@ -37,6 +38,7 @@
 #include <QX11Info>
 #include <QDesktopWidget>
 #include <QPoint>
+#include <QTransform>
 
 #include <meegotouch/mcompositor/mcompositemanager.h>
 
@@ -45,13 +47,63 @@
 #include <X11/Xlib.h>
 
 // define to enable debug logging
-#undef SWITCHER_DEBUG
+#define SWITCHER_DEBUG
 
 #ifdef SWITCHER_DEBUG
 #define SDEBUG qDebug
 #else
 #define SDEBUG if(false)qDebug
 #endif
+
+#include <meegotouch/mcompositor/mcompositewindowanimation.h>
+
+class Anim : public MCompositeWindowAnimation {
+    Q_OBJECT
+public:
+    Anim(QObject *parent = 0) : MCompositeWindowAnimation(parent) {
+        scaleAnimation()->setDuration(300);
+        scaleAnimation()->setStartValue(0.0f);
+        scaleAnimation()->setEndValue(1.0f);
+        opacityAnimation()->setDuration(300);
+        opacityAnimation()->setStartValue(0.0f);
+        opacityAnimation()->setEndValue(1.0f);
+
+        positionAnimation()->setDuration(300);
+    }
+    virtual ~Anim() {}
+    virtual void windowShown() {
+        animationGroup()->setDirection(QAbstractAnimation::Forward);
+        animationGroup()->start();
+    }
+    virtual void windowClosed() {
+        animationGroup()->setDirection(QAbstractAnimation::Backward);
+        animationGroup()->start();
+    }
+    virtual void windowIconified() {
+        animationGroup()->setDirection(QAbstractAnimation::Backward);
+        animationGroup()->start();
+    }
+    virtual void windowRestored() {
+        animationGroup()->setDirection(QAbstractAnimation::Forward);
+        animationGroup()->start();
+    }
+    virtual void setTargetWindow(MCompositeWindow *window)
+    {
+        MCompositeWindowAnimation::setTargetWindow(window);
+
+        // TODO: use window icon geometry, once lipstick sets that
+        const QRectF d = QApplication::desktop()->availableGeometry();
+        QPointF topLeft;
+        topLeft.setX(d.width()/2.0f * 1.0f);
+        topLeft.setY(d.height()/2.0f * 1.0f);
+
+        targetWindow()->setPos(topLeft);
+        positionAnimation()->setStartValue(topLeft);
+        positionAnimation()->setEndValue(
+                    QPointF(targetWindow()->propertyCache()->realGeometry().x(),
+                            targetWindow()->propertyCache()->realGeometry().y()));
+    }
+};
 
 MSwitcherGesture::MSwitcherGesture()
     : startX(-1)
@@ -156,6 +208,8 @@ bool MSwitcherGesture::x11Event(XEvent *event)
     // warning: this will get spammy
 #ifdef REGION_DEBUG
     SDEBUG() << "Need to check custom region: " << checkCustomRegion << "," << customRegion;
+#else
+    Q_UNUSED(checkCustomRegion)
 #endif
     bool keepGrab = false;
 
@@ -204,15 +258,26 @@ bool MSwitcherGesture::onPressed(int x, int y)
     const int windowWidth = QApplication::desktop()->width(); // XXX: should we query window width, or desktop width here?
     const int windowHeight = QApplication::desktop()->height();
 
-    if (x <= allowedSwipeWidth || windowWidth - allowedSwipeWidth < x) {
+    if (x <= allowedSwipeWidth || (windowWidth - allowedSwipeWidth) < x) {
         SDEBUG() << Q_FUNC_INFO << "Swipe started on an X edge";
         swipeDirection = SwipeOnWidth;
         startX = x;
+
+        if (x <= allowedSwipeWidth) {
+            mouseTo01x = QTransform().scale(1.0f/windowWidth, 0.0f);
+        } else {
+            mouseTo01x = QTransform().translate(1.0f, 0.0f).scale(-1.0f/windowWidth,0.0f);
+        }
         return true;
     } else if (y <= allowedSwipeWidth || windowHeight - allowedSwipeWidth < y) {
         SDEBUG() << Q_FUNC_INFO << "Swipe started on a Y edge";
         swipeDirection = SwipeOnHeight;
         startY = y;
+        if (y <= allowedSwipeWidth) {
+            mouseTo01x = QTransform().rotate(-90.0).scale(0.0f, 1.0f/windowHeight);
+        } else {
+            mouseTo01x = QTransform().translate(1.0f, 0.0f).rotate(-90.0).scale(0.0f, -1.0f/windowHeight);
+        }
         return true;
     }
 
@@ -236,13 +301,13 @@ bool MSwitcherGesture::onReleased(int x, int y)
 
         if (swipeDirection == SwipeOnWidth) {
             // horizontal swipe
-            if ((windowWidth * cancelShortEdgeSwipe) > diffX)
+            if ((windowWidth * cancelShortEdgeSwipe) < diffX)
                 SDEBUG() << Q_FUNC_INFO << "Swipe started " << startX << startY << " ended at " << x << y << "; was a swipe on X";
             else
                 doSwitch = false;
         } else {
             // vertical swipe
-            if ((windowHeight * cancelLongEdgeSwipe) > diffY)
+            if ((windowHeight * cancelLongEdgeSwipe) < diffY)
                 SDEBUG() << Q_FUNC_INFO << "Swipe started " << startX << startY << " ended at " << x << y << "; was a swipe on Y";
             else
                 doSwitch = false;
@@ -257,6 +322,13 @@ bool MSwitcherGesture::onReleased(int x, int y)
         } else {
             SDEBUG() << Q_FUNC_INFO << "Swipe unrecognised, start: " << startX << startY << " ended at " << x << y << "; diffX " << diffX << " diffY " << diffY;
             SDEBUG() << Q_FUNC_INFO << "Width: " << windowWidth << " height " << windowHeight;
+            // needed?
+            MCompositeWindow *win = MCompositeWindow::compositeWindow(currentAppWindow);
+            Anim *anim = qobject_cast<Anim*>(win->windowAnimator());
+            if (anim) {
+                anim->animationGroup()->setDirection(QAbstractAnimation::Forward);
+                anim->animationGroup()->resume();
+            }
         }
     }
 
@@ -269,16 +341,47 @@ bool MSwitcherGesture::onReleased(int x, int y)
 
 bool MSwitcherGesture::onMousePositionChanged(int x, int y)
 {
-    if (swiping == true)
+    if (swiping) {
+        MCompositeWindow* window_object = MCompositeWindow::compositeWindow(currentAppWindow);
+        if (window_object) {
+            Anim *anim = qobject_cast<Anim*>(window_object->windowAnimator());
+            if (anim->isActive()) {
+                qreal relativeTime = 2*mouseTo01x.map(QPointF(x, y)).x();
+                int animDurationMsecs = anim->animationGroup()->duration();
+                // bound time so that animation will not stop
+                int msecs = animDurationMsecs - qBound(1, (int)(relativeTime*animDurationMsecs), animDurationMsecs-1);
+                anim->animationGroup()->setCurrentTime(msecs);
+            }
+        }
         return true;
+    }
 
     // TODO: User should be able to configure this
-    const int swipeThreshold = 20;
-    
+    const int swipeThreshold = 10;
+
     if((0 <= startX && swipeThreshold < abs(x - startX)) || 
        (0 <= startY && swipeThreshold < abs(y - startY)) ) {
         swiping = true;
         SDEBUG() << Q_FUNC_INFO << "Swipe started at " << x << y;
+
+        MCompositeWindow* window_object = MCompositeWindow::compositeWindow(currentAppWindow);
+        if (window_object) {
+            window_object->updateWindowPixmap();
+            MCompositeManager *manager = qobject_cast<MCompositeManager *>(qApp);
+            if (!manager->isCompositing()) {
+                MCompositeWindow::compositeWindow(manager->desktopWindow())->updateWindowPixmap();
+                manager->enableCompositing();
+            }
+
+            Anim *anim = qobject_cast<Anim*>(window_object->windowAnimator());
+            if (!anim) {
+                anim = new Anim(window_object);
+                anim->setTargetWindow(window_object);
+            }
+            anim->animationGroup()->setDirection(QAbstractAnimation::Backward);
+            anim->start();
+            anim->pause();
+        }
     }
 
     return true;
@@ -288,6 +391,8 @@ void MSwitcherGesture::appWindowChanged(Qt::HANDLE window)
 {
     SDEBUG() << "Current window is " << window;
     // TODO: Does this need mutex?
+    // TODO: Do we need to control animation in the other window?
+    // i.e. make it finish if it was paused?
     currentAppWindow = window;
 }
 
@@ -344,3 +449,4 @@ bool MSwitcherGesture::getCustomRegion(Qt::HANDLE window, QRegion& customRegion)
     return false;
 }
 
+#include "mswitchergesture.moc"

@@ -35,11 +35,15 @@
 
 #include <QRegion>
 #include <QObject>
+#include <QTransform>
+#include <QPointer>
 
 #include <meegotouch/mcompositor/mcompositemanagerextension.h>
 
 #include <X11/extensions/XInput2.h>
 
+class Effect;
+class Anim;
 class MSwitcherGesture : public MCompositeManagerExtension
 {
     Q_OBJECT
@@ -78,6 +82,8 @@ private:
     int opcode;
     
     Qt::HANDLE currentAppWindow;
+
+    QTransform mouseTo01x;
 };
 
 #endif // MSWITCHERGESTURE_H
