@@ -146,7 +146,8 @@ MSwitcherGesture::~MSwitcherGesture()
  */
 bool MSwitcherGesture::x11Event(XEvent *event)
 {
-    if (event->type != GenericEvent) {
+    if (event->type != GenericEvent || (event->xcookie.extension == opcode &&
+				      event->xcookie.evtype == XI_DeviceChanged)) {
         return false;
     }
 
